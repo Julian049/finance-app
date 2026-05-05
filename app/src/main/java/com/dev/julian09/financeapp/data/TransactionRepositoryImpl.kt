@@ -22,6 +22,7 @@ class TransactionRepositoryImpl(
             val entities = dtos.map {
                 TransactionEntity(
                     it.id,
+                    it.title,
                     it.value,
                     it.type,
                     it.description,
@@ -35,6 +36,7 @@ class TransactionRepositoryImpl(
             entities.map {
                 Transaction(
                     it.localId,
+                    it.title,
                     it.value,
                     it.type,
                     it.description,
@@ -47,6 +49,7 @@ class TransactionRepositoryImpl(
             dao.getAllTransactions().map {
                 Transaction(
                     it.localId,
+                    it.title,
                     it.value,
                     it.type,
                     it.description,
