@@ -1,5 +1,6 @@
 package com.dev.julian09.financeapp.data
 
+import android.util.Log
 import com.dev.julian09.financeapp.data.local.TransactionDao
 import com.dev.julian09.financeapp.data.local.TransactionEntity
 import com.dev.julian09.financeapp.data.remote.ApiService
@@ -17,7 +18,10 @@ class TransactionRepositoryImpl(
 
     override suspend fun getTransactions(): List<Transaction> {
         return try {
+            Log.d("REPOSITORIOLOG", "1. Iniciando sincronización en el Repositorio...")
             val dtos = api.getAllTransactions()
+            Log.d("REPOSITORIOLOG", "Aca segun hay ${dtos.size}")
+            Log.d("REPOSITORIOLOG", "2. ¡Éxito! La API devolvió ${dtos[0]} elementos.")
 
             val entities = dtos.map {
                 TransactionEntity(
@@ -46,6 +50,7 @@ class TransactionRepositoryImpl(
             }
 
         } catch (e: Exception) {
+            Log.e("REPOSITORIOLOG", "Error al sincronizar: ${e.message}")
             dao.getAllTransactions().map {
                 Transaction(
                     it.localId,
@@ -58,6 +63,19 @@ class TransactionRepositoryImpl(
                 )
             }
         }
+    }
+
+    override suspend fun addTransaction(transaction: Transaction) {
+        val entity = TransactionEntity(
+            transaction.id,
+            transaction.title,
+            transaction.value,
+            transaction.type,
+            transaction.description,
+            transaction.date,
+            transaction.synced
+        )
+        dao.insert(entity)
     }
 
     private fun formatDate(raw: String): String {

@@ -52,11 +52,16 @@ import com.dev.julian09.financeapp.ui.theme.SurfaceWhite
 import com.dev.julian09.financeapp.ui.theme.TextOnDark
 import com.dev.julian09.financeapp.ui.theme.TextPrimary
 import com.dev.julian09.financeapp.ui.theme.TextSecondary
+import com.dev.julian09.financeapp.viewmodel.TransactionViewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RegisterTransaction() {
+fun RegisterTransaction(
+    onBack: () -> Unit,
+    viewModel: TransactionViewModel = hiltViewModel()
+) {
 
     var amountValue by remember { mutableStateOf("") }
     var titleValue by remember { mutableStateOf("") }
@@ -83,7 +88,7 @@ fun RegisterTransaction() {
                         Text("Add transaction")
                     },
                     navigationIcon = {
-                        IconButton(onClick = { }) {
+                        IconButton(onClick = onBack) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Back",
@@ -183,7 +188,14 @@ fun RegisterTransaction() {
                 )
             }
             Button(
-                onClick = {}, modifier = Modifier
+                onClick = {
+                    viewModel.addTransaction(
+                        titleValue,
+                        amountValue,
+                        descriptionValue,
+                        "${dateValue.selectedDateMillis} ${timeValue.hour}:${timeValue.minute}"
+                    )
+                }, modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp),
                 colors = ButtonDefaults.buttonColors(
@@ -263,5 +275,5 @@ fun DefaultButtonType(
 @Preview
 @Composable
 fun RegisterTransactionPreview() {
-    RegisterTransaction()
+    RegisterTransaction({})
 }

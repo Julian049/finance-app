@@ -64,6 +64,11 @@ dependencies {
     ksp("com.google.dagger:hilt-android-compiler:2.57.1")
     implementation("com.squareup.retrofit2:retrofit:3.0.0")
     implementation("com.squareup.retrofit2:converter-gson:3.0.0")
+    implementation("androidx.hilt:hilt-navigation-compose:1.3.0")
+    val nav_version = "2.9.8"
+    implementation("androidx.navigation:navigation-compose:$nav_version")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

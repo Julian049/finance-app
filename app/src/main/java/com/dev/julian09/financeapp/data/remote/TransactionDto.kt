@@ -5,7 +5,7 @@ data class TransactionDto(
     val title: String,
     val value: Double,
     val type: Boolean,
-    val description: String,
+    val description: String?,
     val date: String,
     val synced: Boolean
 )
