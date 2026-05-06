@@ -5,35 +5,62 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dev.julian09.financeapp.domain.model.Transaction
 import com.dev.julian09.financeapp.domain.usecase.AddTransactionUseCase
+import com.dev.julian09.financeapp.domain.usecase.GetTotalAmountUseCase
 import com.dev.julian09.financeapp.domain.usecase.GetTransactionsUseCase
+import com.dev.julian09.financeapp.domain.usecase.HealthCheckUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.nio.DoubleBuffer
 
 @HiltViewModel
 class TransactionViewModel @Inject constructor(
+    private val healthCheckUseCase: HealthCheckUseCase,
     private val getTransactionsUseCase: GetTransactionsUseCase,
-    private val addTransactionUseCase: AddTransactionUseCase
+    private val addTransactionUseCase: AddTransactionUseCase,
+    private val getTotalAmountUseCase: GetTotalAmountUseCase
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow<UiState>(UiState.Loading)
+    private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
     init {
+        verifyHealth()
         loadTransactions()
+    }
+
+    fun verifyHealth() {
+        viewModelScope.launch {
+            val result = healthCheckUseCase()
+            _uiState.update { it.copy(isApiHealthy = result) }
+        }
     }
 
     fun loadTransactions() {
         viewModelScope.launch {
-            _uiState.value = UiState.Loading
+            _uiState.update { it.copy(isLoading = true) }
             try {
                 val transactions = getTransactionsUseCase()
-                _uiState.value = UiState.Success(transactions)
+                val amount = getTotalAmountUseCase(transactions)
+                _uiState.update { currentState ->
+                    currentState.copy(
+                        isLoading = false,
+                        transactions = transactions,
+                        amount = amount
+                    )
+                }
+
             } catch (e: Exception) {
-                _uiState.value = UiState.Error(e.message ?: "Error desconocido")
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = e.message ?: "Error desconocido"
+                    )
+                }
             }
         }
     }
@@ -61,10 +88,12 @@ class TransactionViewModel @Inject constructor(
         }
     }
 
-    sealed class UiState {
-        object Loading : UiState()
-        data class Success(val transactions: List<Transaction>) : UiState()
-        data class Error(val message: String) : UiState()
-    }
+    data class UiState(
+        val isLoading: Boolean = true,
+        val transactions: List<Transaction> = emptyList(),
+        val amount: Double? = 0.0,
+        val errorMessage: String? = null,
+        val isApiHealthy: Boolean? = null
+    )
 }
  

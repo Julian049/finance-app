@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.dev.julian09.financeapp.domain.model.Transaction
 import com.dev.julian09.financeapp.ui.theme.AppBackground
 import com.dev.julian09.financeapp.ui.theme.SlateBluePrimary
 import com.dev.julian09.financeapp.ui.theme.TextOnDark
@@ -37,8 +38,17 @@ fun MainScreen(
     onAddNewTransaction: () -> Unit,
     viewModel: TransactionViewModel = hiltViewModel()
 ) {
-
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    MainScreenContent(uiState, onAddNewTransaction, {})
+}
+
+@Composable
+fun MainScreenContent(
+    uiState: TransactionViewModel.UiState,
+    onAddNewTransaction: () -> Unit,
+    onSyncClick: () -> Unit
+) {
+
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
@@ -76,7 +86,7 @@ fun MainScreen(
                 }
             }
             Text(
-                text = "$1000.00",
+                text = "$${uiState.amount}",
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(all = 8.dp),
@@ -85,38 +95,60 @@ fun MainScreen(
             Spacer(modifier = Modifier.padding(bottom = 15.dp))
             Text(text = "Transacciones", modifier = Modifier.padding(all = 8.dp))
 
-            when (val state = uiState) {
-                is TransactionViewModel.UiState.Loading -> {
-                    Text("Cargando transacciones...", Modifier.padding(8.dp))
-                }
-
-                is TransactionViewModel.UiState.Error -> {
-                    Text(
-                        "Error: ${state.message}",
-                        color = androidx.compose.ui.graphics.Color.Red
-                    )
-                }
-
-                is TransactionViewModel.UiState.Success -> {
-                    LazyColumn {
-                        items(state.transactions) { transaction ->
-                            TransactionItem(
-                                title = transaction.title,
-                                date = transaction.date,
-                                status = transaction.synced,
-                                value = transaction.value
-                            )
-                        }
+            if (uiState.isLoading) {
+                Text("Cargando transacciones...", Modifier.padding(8.dp))
+            } else if (uiState.transactions.isEmpty()) {
+                Text(
+                    "Error: ${uiState.errorMessage}",
+                    color = androidx.compose.ui.graphics.Color.Red
+                )
+            } else {
+                LazyColumn {
+                    items(uiState.transactions) { transaction ->
+                        TransactionItem(
+                            title = transaction.title,
+                            date = transaction.date,
+                            status = transaction.synced,
+                            value = transaction.value
+                        )
                     }
                 }
             }
-
         }
     }
 }
 
 @Composable
-@Preview(showBackground = true)
+@Preview(showBackground = true, name = "Estado: Cargado con datos")
 fun MainScreenPreview() {
-    MainScreen({})
+    // Te inventas un estado "falso" (Mock)
+    val mockUiState = TransactionViewModel.UiState(
+        isLoading = false,
+        transactions = listOf(
+            Transaction(1, "Mercado", -150.00, true, "Supermercado XYZ", "05 May 2026", true),
+            Transaction(2, "Salario", 2500.00, false, "Pago mensual", "01 May 2026", true)
+        ),
+        errorMessage = null,
+        isApiHealthy = true
+    )
+    MainScreenContent(
+        uiState = mockUiState,
+        onAddNewTransaction = {},
+        onSyncClick = {}
+    )
+}
+@Composable
+@Preview(showBackground = true, name = "Estado: Cargando")
+fun MainScreenLoadingPreview() {
+    val mockUiState = TransactionViewModel.UiState(
+        isLoading = true,
+        transactions = emptyList(),
+        errorMessage = null,
+        isApiHealthy = true
+    )
+    MainScreenContent(
+        uiState = mockUiState,
+        onAddNewTransaction = {},
+        onSyncClick = {}
+    )
 }

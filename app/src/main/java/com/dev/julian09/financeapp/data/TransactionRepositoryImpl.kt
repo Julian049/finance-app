@@ -15,6 +15,15 @@ class TransactionRepositoryImpl(
     private val api: ApiService
 ) : TransactionRepository {
 
+    override suspend fun healthCheck(): Boolean {
+        return try {
+            val response = api.healthCheck()
+            response.code() == 200
+        } catch (e: Exception) {
+            Log.e("REPOSITORIOLOG", "Error en el health check: ${e.message}")
+            false
+        }
+    }
 
     override suspend fun getTransactions(): List<Transaction> {
         return try {
@@ -76,6 +85,17 @@ class TransactionRepositoryImpl(
             transaction.synced
         )
         dao.insert(entity)
+    }
+
+    override suspend fun getTotalAmount(transactions: List<Transaction>): Double {
+        var total = 0.0
+        Log.d("TOTALAMOUNT", "Inicia a calcular el saldo $total")
+        transactions.forEach { transaction ->
+            total += transaction.value
+            Log.d("TOTALAMOUNT", "Saldo: $total")
+        }
+
+        return total
     }
 
     private fun formatDate(raw: String): String {

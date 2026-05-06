@@ -1,10 +1,14 @@
 package com.dev.julian09.financeapp.data.remote
 
+import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 
 interface ApiService {
+
+    @GET("actuator/health")
+    suspend fun healthCheck(): Response<Unit>
 
     @GET("/transactions")
     suspend fun getAllTransactions(): List<TransactionDto>

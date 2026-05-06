@@ -40,6 +40,11 @@ android {
     buildFeatures {
         compose = true
     }
+    testOptions {
+        unitTests {
+            isReturnDefaultValues = true
+        }
+    }
 }
 
 //noinspection UseTomlInstead
@@ -67,7 +72,7 @@ dependencies {
     implementation("androidx.hilt:hilt-navigation-compose:1.3.0")
     val nav_version = "2.9.8"
     implementation("androidx.navigation:navigation-compose:$nav_version")
-    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+    testImplementation("io.mockk:mockk:1.13.17")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
