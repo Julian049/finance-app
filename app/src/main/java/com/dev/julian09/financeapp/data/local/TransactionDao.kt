@@ -5,6 +5,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TransactionDao {
@@ -12,7 +13,7 @@ interface TransactionDao {
     suspend fun insert(transactionEntity: TransactionEntity)
 
     @Query("SELECT * FROM transactions ORDER BY date DESC")
-    suspend fun getAllTransactions(): List<TransactionEntity>
+    fun getAllTransactions(): Flow<List<TransactionEntity>>
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(entities: List<TransactionEntity>)
 }

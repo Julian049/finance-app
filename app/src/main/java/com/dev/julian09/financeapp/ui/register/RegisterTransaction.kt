@@ -27,6 +27,7 @@ import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -54,6 +55,7 @@ import com.dev.julian09.financeapp.ui.theme.TextPrimary
 import com.dev.julian09.financeapp.ui.theme.TextSecondary
 import com.dev.julian09.financeapp.viewmodel.TransactionViewModel
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -62,6 +64,7 @@ fun RegisterTransaction(
     onBack: () -> Unit,
     viewModel: TransactionViewModel = hiltViewModel()
 ) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     var amountValue by remember { mutableStateOf("") }
     var titleValue by remember { mutableStateOf("") }
@@ -75,6 +78,13 @@ fun RegisterTransaction(
         initialMinute = calendar.get(Calendar.MINUTE)
     )
     var descriptionValue by remember { mutableStateOf("") }
+
+    LaunchedEffect(uiState.isTransactionAdded) {
+        if (uiState.isTransactionAdded) {
+            onBack()
+            viewModel.resetNavigation()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -189,12 +199,15 @@ fun RegisterTransaction(
             }
             Button(
                 onClick = {
-                    viewModel.addTransaction(
-                        titleValue,
-                        amountValue,
-                        descriptionValue,
-                        "${dateValue.selectedDateMillis} ${timeValue.hour}:${timeValue.minute}"
-                    )
+                    if (!uiState.isSaving) {
+                        viewModel.addTransaction(
+                            titleValue,
+                            if (selectedType == 2) ("-$amountValue") else amountValue,
+                            descriptionValue,
+                            "${dateValue.selectedDateMillis} ${timeValue.hour}:${timeValue.minute}"
+
+                        )
+                    }
                 }, modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp),

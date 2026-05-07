@@ -42,20 +42,26 @@ class TransactionViewModel @Inject constructor(
 
     fun loadTransactions() {
         viewModelScope.launch {
+            Log.d("LOAD_VIEW_MODEL", "Cargando transaccones")
             _uiState.update { it.copy(isLoading = true) }
             try {
-                val transactions = getTransactionsUseCase()
-                val amount = getTotalAmountUseCase(transactions)
-                _uiState.update { currentState ->
-                    currentState.copy(
-                        isLoading = false,
-                        transactions = transactions,
-                        amount = amount
-                    )
-                }
+                getTransactionsUseCase().collect { transactionsList ->
 
+                    Log.d("LOAD_VIEW_MODEL", "Nueva lista recibida: ${transactionsList.size} elementos")
+
+                    val amount = getTotalAmountUseCase(transactionsList)
+
+                    _uiState.update { currentState ->
+                        currentState.copy(
+                            isLoading = false,
+                            transactions = transactionsList,
+                            amount = amount
+                        )
+                    }
+                }
             } catch (e: Exception) {
                 _uiState.update {
+                    Log.e("ERROR_LOAD_VIEW_MODEL","${e.message}")
                     it.copy(
                         isLoading = false,
                         errorMessage = e.message ?: "Error desconocido"
@@ -85,11 +91,18 @@ class TransactionViewModel @Inject constructor(
                 false
             )
             addTransactionUseCase(transaction)
+            _uiState.update { it.copy(isTransactionAdded = true, isSaving = false) }
         }
+    }
+
+    fun resetNavigation() {
+        _uiState.update { it.copy(isTransactionAdded = false) }
     }
 
     data class UiState(
         val isLoading: Boolean = true,
+        val isSaving: Boolean = false,
+        val isTransactionAdded: Boolean = false,
         val transactions: List<Transaction> = emptyList(),
         val amount: Double? = 0.0,
         val errorMessage: String? = null,
