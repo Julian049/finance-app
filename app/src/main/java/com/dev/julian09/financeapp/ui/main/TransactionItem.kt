@@ -52,7 +52,7 @@ fun TransactionItem(title: String, date: String, status: Boolean, value: Double)
         }
 
         var color: Color?
-        if (status) {
+        if (!status) {
             color = PendingSync
         } else {
             color = SyncedCloud
