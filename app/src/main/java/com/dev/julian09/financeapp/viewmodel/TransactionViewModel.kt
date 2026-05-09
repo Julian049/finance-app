@@ -8,6 +8,7 @@ import com.dev.julian09.financeapp.domain.usecase.AddTransactionUseCase
 import com.dev.julian09.financeapp.domain.usecase.GetTotalAmountUseCase
 import com.dev.julian09.financeapp.domain.usecase.GetTransactionsUseCase
 import com.dev.julian09.financeapp.domain.usecase.HealthCheckUseCase
+import com.dev.julian09.financeapp.domain.usecase.SyncTransactionsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,13 +17,15 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.nio.DoubleBuffer
+import java.util.UUID
 
 @HiltViewModel
 class TransactionViewModel @Inject constructor(
     private val healthCheckUseCase: HealthCheckUseCase,
     private val getTransactionsUseCase: GetTransactionsUseCase,
     private val addTransactionUseCase: AddTransactionUseCase,
-    private val getTotalAmountUseCase: GetTotalAmountUseCase
+    private val getTotalAmountUseCase: GetTotalAmountUseCase,
+    private val syncTransactionsUseCase: SyncTransactionsUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UiState())
@@ -47,7 +50,10 @@ class TransactionViewModel @Inject constructor(
             try {
                 getTransactionsUseCase().collect { transactionsList ->
 
-                    Log.d("LOAD_VIEW_MODEL", "Nueva lista recibida: ${transactionsList.size} elementos")
+                    Log.d(
+                        "LOAD_VIEW_MODEL",
+                        "Nueva lista recibida: ${transactionsList.size} elementos"
+                    )
 
                     val amount = getTotalAmountUseCase(transactionsList)
 
@@ -61,7 +67,7 @@ class TransactionViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 _uiState.update {
-                    Log.e("ERROR_LOAD_VIEW_MODEL","${e.message}")
+                    Log.e("ERROR_LOAD_VIEW_MODEL", "${e.message}")
                     it.copy(
                         isLoading = false,
                         errorMessage = e.message ?: "Error desconocido"
@@ -82,7 +88,7 @@ class TransactionViewModel @Inject constructor(
             }
 
             val transaction = Transaction(
-                0,
+                UUID.randomUUID().toString(),
                 title,
                 value.toDouble(),
                 finalType,
@@ -92,6 +98,14 @@ class TransactionViewModel @Inject constructor(
             )
             addTransactionUseCase(transaction)
             _uiState.update { it.copy(isTransactionAdded = true, isSaving = false) }
+        }
+    }
+
+    fun syncTransactions() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSaving = true) }
+            syncTransactionsUseCase()
+            _uiState.update { it.copy(isSaving = false) }
         }
     }
 

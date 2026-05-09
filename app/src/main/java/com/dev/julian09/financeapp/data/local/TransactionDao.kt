@@ -12,8 +12,16 @@ interface TransactionDao {
     @Insert
     suspend fun insert(transactionEntity: TransactionEntity)
 
+    @Query("SELECT * FROM transactions WHERE synced = 0")
+    suspend fun getUnSyncedTransactions(): List<TransactionEntity>
+
     @Query("SELECT * FROM transactions ORDER BY date DESC")
     fun getAllTransactions(): Flow<List<TransactionEntity>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(entities: List<TransactionEntity>)
+
+    @Query("UPDATE transactions SET synced = 1 WHERE synced = 0")
+    suspend fun updateSyncedStatus()
+
 }

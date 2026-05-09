@@ -5,7 +5,7 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "transactions")
 data class TransactionEntity(
-    @PrimaryKey(autoGenerate = true) val localId: Long = 0,
+    @PrimaryKey val localId: String,
     val title: String,
     val value: Double,
     val type: Boolean,

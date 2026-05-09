@@ -24,7 +24,8 @@ class AppModule {
     @Provides
     fun provideRetrofit(): Retrofit {
         return Retrofit.Builder()
-            .baseUrl("http://10.0.2.2:8080/")
+//            .baseUrl("http://10.0.2.2:8080/")
+            .baseUrl("https://fs8m5kb0k8zc.shares.zrok.io")
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     }

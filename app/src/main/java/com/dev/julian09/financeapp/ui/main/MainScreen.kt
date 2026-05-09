@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dev.julian09.financeapp.domain.model.Transaction
 import com.dev.julian09.financeapp.ui.theme.AppBackground
 import com.dev.julian09.financeapp.ui.theme.PendingSync
@@ -42,17 +43,17 @@ import com.dev.julian09.financeapp.viewmodel.TransactionViewModel
 @Composable
 fun MainScreen(
     onAddNewTransaction: () -> Unit,
-    viewModel: TransactionViewModel = hiltViewModel()
+    viewModel: TransactionViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    MainScreenContent(uiState, onAddNewTransaction, {})
+    MainScreenContent(uiState, onAddNewTransaction, viewModel::syncTransactions)
 }
 
 @Composable
 fun MainScreenContent(
     uiState: TransactionViewModel.UiState,
     onAddNewTransaction: () -> Unit,
-    onSyncClick: () -> Unit
+    onSyncTransactions: () -> Unit = {}
 ) {
 
     Scaffold(
@@ -81,7 +82,7 @@ fun MainScreenContent(
                         .padding(all = 8.dp)
                 )
                 Button(
-                    onClick = {}, modifier = Modifier
+                    onClick = onSyncTransactions, modifier = Modifier
                         .weight(1f)
                         .padding(horizontal = 20.dp),
                     colors = ButtonDefaults.buttonColors(
@@ -123,7 +124,7 @@ fun MainScreenContent(
             } else if (uiState.transactions.isEmpty()) {
                 Text(
                     "Error: ${uiState.errorMessage}",
-                    color = androidx.compose.ui.graphics.Color.Red
+                    color = Color.Red
                 )
             } else {
                 LazyColumn {
@@ -148,8 +149,8 @@ fun MainScreenPreview() {
     val mockUiState = TransactionViewModel.UiState(
         isLoading = false,
         transactions = listOf(
-            Transaction(1, "Mercado", -150.00, true, "Supermercado XYZ", "05 May 2026", true),
-            Transaction(2, "Salario", 2500.00, false, "Pago mensual", "01 May 2026", true)
+            Transaction("1", "Mercado", -150.00, true, "Supermercado XYZ", "05 May 2026", true),
+            Transaction("2", "Salario", 2500.00, false, "Pago mensual", "01 May 2026", true)
         ),
         amount = 2350.0,
         errorMessage = null,
@@ -157,8 +158,7 @@ fun MainScreenPreview() {
     )
     MainScreenContent(
         uiState = mockUiState,
-        onAddNewTransaction = {},
-        onSyncClick = {}
+        onAddNewTransaction = {}
     )
 }
 
@@ -173,7 +173,6 @@ fun MainScreenLoadingPreview() {
     )
     MainScreenContent(
         uiState = mockUiState,
-        onAddNewTransaction = {},
-        onSyncClick = {}
+        onAddNewTransaction = {}
     )
 }

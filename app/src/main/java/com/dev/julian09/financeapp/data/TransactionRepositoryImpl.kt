@@ -4,13 +4,21 @@ import android.util.Log
 import com.dev.julian09.financeapp.data.local.TransactionDao
 import com.dev.julian09.financeapp.data.local.TransactionEntity
 import com.dev.julian09.financeapp.data.remote.ApiService
+import com.dev.julian09.financeapp.data.remote.TransactionDto
 import com.dev.julian09.financeapp.domain.model.Transaction
 import com.dev.julian09.financeapp.domain.repository.TransactionRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.runBlocking
+import java.text.SimpleDateFormat
+import java.time.Instant
 import java.time.OffsetDateTime
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
+import java.util.Calendar
+import java.util.Date
 import java.util.Locale
+import kotlin.collections.map
 
 class TransactionRepositoryImpl(
     private val dao: TransactionDao,
@@ -27,7 +35,7 @@ class TransactionRepositoryImpl(
         }
     }
 
-    override fun getTransactions(): Flow<List<Transaction>> {
+    fun getLocalTransactions(): Flow<List<Transaction>> {
         return dao.getAllTransactions().map { entities ->
             entities.map { entity ->
                 Transaction(
@@ -43,26 +51,57 @@ class TransactionRepositoryImpl(
         }
     }
 
+    override fun getTransactions(): Flow<List<Transaction>> {
+        try {
+            Log.d("REPOSITORIOLOG", "Obteniendo transacciones...")
+            runBlocking {
+                dao.insertAll(
+                    api.getAllTransactions().map { dto ->
+                        TransactionEntity(
+                            dto.localId,
+                            dto.title,
+                            dto.value,
+                            dto.type,
+                            dto.description,
+                            dto.date,
+                            dto.synced
+                        )
+                    })
+            }
+            Log.d("REPOSITORIOLOG", "Transacciones obtenidas correctamente")
+        }catch (e: Exception) {
+            Log.e("REPOSITORIOLOG", "Error al sincronizar: ${e.message}")
+        }
+        return getLocalTransactions()
+    }
+
     override suspend fun syncTransactions() {
         try {
             Log.d("REPOSITORIOLOG", "Iniciando sincronización...")
-            val dtos = api.getAllTransactions()
-
-            val entities = dtos.map { dto ->
-                TransactionEntity(
-                    dto.id,
-                    dto.title,
-                    dto.value,
-                    dto.type,
-                    dto.description,
-                    formatDate(dto.date),
-                    dto.synced
+            val unSyncedTransactions = dao.getUnSyncedTransactions()
+            if (unSyncedTransactions.isEmpty()){
+                Log.d("REPOSITORIOLOG", "No hay transacciones sin sincronizar.")
+                return
+            }
+            Log.d("REPOSITORIOLOG", "${unSyncedTransactions.size} transacciones sin sincronizar.")
+            unSyncedTransactions.forEach { entity ->
+                api.createTransaction(
+                    TransactionDto(
+                        entity.localId,
+                        entity.title,
+                        entity.value,
+                        entity.type,
+                        entity.description,
+                        formatDate(entity.date),
+                        entity.synced
+                    )
                 )
             }
-
-
-            dao.insertAll(entities)
-            Log.d("REPOSITORIOLOG", "Sincronización completada: ${dtos.size} elementos.")
+            dao.updateSyncedStatus()
+            Log.d(
+                "REPOSITORIOLOG",
+                "Sincronización completada: ${unSyncedTransactions.size} elementos."
+            )
 
         } catch (e: Exception) {
             Log.e("REPOSITORIOLOG", "Error al sincronizar: ${e.message}")
@@ -71,12 +110,12 @@ class TransactionRepositoryImpl(
 
     override suspend fun addTransaction(transaction: Transaction) {
         val entity = TransactionEntity(
-            transaction.id,
+            transaction.localId,
             transaction.title,
             transaction.value,
             transaction.type,
             transaction.description,
-            transaction.date,
+            formatDate(transaction.date),
             transaction.synced
         )
         dao.insert(entity)
@@ -95,9 +134,19 @@ class TransactionRepositoryImpl(
 
     private fun formatDate(raw: String): String {
         return try {
-            val odt = OffsetDateTime.parse(raw)
-            val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale("es"))
-            odt.format(formatter)
+            val parts = raw.trim().split(" ")
+            val millis = parts[0].toLong()
+            val timePart = if (parts.size > 1) parts[1] else "00:00"
+            val (hour, minute) = timePart.split(":").map { it.toInt() }
+
+            val instant = Instant.ofEpochMilli(millis)
+            val odt = OffsetDateTime.ofInstant(instant, ZoneOffset.UTC)
+                .withHour(hour)
+                .withMinute(minute)
+                .withSecond(0)
+                .withNano(0)
+
+            odt.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
         } catch (e: Exception) {
             raw
         }
