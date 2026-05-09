@@ -68,4 +68,4 @@ Ejemplo: `TransactionRepositoryImplTest` verifica que `getTotalAmount` suma corr
 
 ## Autor
 
-* **Julian David Bocanegra Segura** - Desarrollador
+* [**Julian David Bocanegra Segura**](https://github.com/Julian049) - Desarrollador
